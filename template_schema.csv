@@ -1,0 +1,8 @@
+FarmersID,RSBSAID,LastName,FirstName,MiddlName,ExtName,Birthdate,Sex,CivilStatus,ProvFarmer,MunFarmer,BrgyFarmer,StFarmer,Mobile,Spouse,Sector,Beneficiary,BeneRelationship,BeneBirthdate,PaymentMethod,Account,InsuranceLine,Area,AmountCover,AnimalType,BoatType
+F-1001,RS-001,Cruz,Juan,Delos,Jr.,1980-05-15,Male,Married,Isabela,Ilagan,Centro,Main St,09171234567,Maria Cruz,Rice,Jose Cruz,Son,2010-01-01,Cash,,Corn Insurance,2.5,50000,,
+F-1002,RS-002,Santos,Maria,Clara,,1985-08-20,Female,Single,Isabela,Cauayan,San Fermin,,09181234567,,Corn,Juana Santos,Mother,1960-05-05,Bank Transfer,123-456-7890,Rice Insurance,1.0,20000,,
+F-1003,RS-003,Rizal,Jose,Protacio,,1990-12-30,Male,Widower,Isabela,Santiago,Dubinan,,09191234567,,HVC,Paciano Rizal,Brother,1980-03-30,G-Cash,09191234567,HVC Insurance,5.0,100000,,
+F-1004,RS-004,Bonifacio,Andres,,Itay,1975-11-30,Male,Married,Isabela,Tumauini,Maligaya,,09201234567,Gregoria,Livestock,Oria Bonifacio,Wife,1978-02-14,Cash,,Livestock Insurance,,,Swine,
+F-1005,RS-005,Silang,Gabriela,,,1995-03-19,Female,Separated,Isabela,Alicia,Burgos,,09211234567,,Fisheries,Diego Silang,Father,1965-09-20,Cash,,Banca Insurance,,,,"Motorized Banca"
+F-1001,RS-001,Cruz,Juan,Delos,Jr.,1980-05-15,Male,Married,Isabela,Ilagan,Centro,Main St,09171234567,Maria Cruz,Rice,Jose Cruz,Son,2010-01-01,Cash,,Accident Insurance,,,,"Non-Motorized"
+F-1006,,Penduko,Pedro,,,2000-01-01,Male,Single,Cagayan,Tuguegarao,Carig,,09221234567,,ADSS,N/A,N/A,,Cash,,Loan Repayment ADSS,,,

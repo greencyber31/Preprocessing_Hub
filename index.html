@@ -1,0 +1,2050 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCIC Preprocess Hub - CSV Processing</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <span class="icon">🌾</span>
+                <h1>PCIC Preprocess <span>Hub</span></h1>
+            </div>
+            <p class="subtitle">Premium CSV Processing for Agricultural Insurance Data</p>
+        </header>
+
+        <main>
+            <section class="upload-section" id="drop-zone">
+                <div class="upload-content">
+                    <div class="upload-icon">📁</div>
+                    <h3>Upload CSV File(s)</h3>
+                    <p>Drag & drop your files here or click to browse</p>
+                    <input type="file" id="csv-input" accept=".csv" multiple hidden>
+                    <button class="btn btn-primary" onclick="document.getElementById('csv-input').click()">Select
+                        File(s)</button>
+                </div>
+            </section>
+
+            <section class="dashboard-section hidden" id="dashboard">
+                <div class="summary-grid" id="summary-cards">
+                    <!-- Cards will be injected here -->
+                </div>
+
+                <div class="table-controls">
+                    <div class="controls-row">
+                        <div class="search-box">
+                            <input type="text" id="table-search" placeholder="Search in table...">
+                        </div>
+                        <div class="filter-box">
+                            <select id="insurance-filter" class="filter-select">
+                                <option value="all">All Insurance Lines</option>
+                            </select>
+                            <select id="crop-filter" class="filter-select">
+                                <option value="all">All Crop Types</option>
+                            </select>
+                            <select id="class-filter" class="filter-select">
+                                <option value="all">All Classes</option>
+                            </select>
+                            <input type="date" id="date-from-filter" class="filter-select"
+                                placeholder="From Planting Date">
+                            <input type="date" id="date-to-filter" class="filter-select" placeholder="To Planting Date">
+                        </div>
+                    </div>
+
+                    <div class="controls-row">
+                        <button class="btn" id="print-btn">
+                            <i class="fas fa-print"></i> Print Report
+                        </button>
+                        <select id="report-type-selector" class="filter-select" style="min-width: 250px;">
+                            <option value="none">Please Filter First</option>
+                            <option value="rice-corn">Rice/Corn Pre-processing</option>
+                            <option value="tir">ADSS/TIR Slip</option>
+                            <option value="hvc">HVC Preprocessing Slip</option>
+                            <option value="fisheries">Fisheries Preprocessing Slip</option>
+                            <option value="livestock">Livestock Preprocess Slip</option>
+                            <option value="noncrop">NCI Preprocessing Slip</option>
+                        </select>
+                        <button id="reset-filters-btn" class="btn">Reset Filters</button>
+                        <div class="stats-badge" id="row-count">0 Rows</div>
+                        <button class="btn btn-danger" id="clear-data-btn" style="margin-left: auto;">Clear
+                            Data</button>
+                    </div>
+                </div>
+
+                <div id="bulk-actions-bar" class="bulk-actions-bar hidden">
+                    <span id="selected-count">0 Rows Selected</span>
+                    <button id="print-selected-btn" class="btn btn-primary">Print Selected</button>
+                    <button id="deselect-all-btn" class="btn btn-danger">Deselect All</button>
+                </div>
+
+                <div class="table-wrapper">
+                    <table id="data-table">
+                        <thead id="table-head"></thead>
+                        <tbody id="table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div class="footer-content">
+                <p>&copy; 2026 PCIC Preprocess Hub. Secure Offline Processing.</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- PRINT MODAL -->
+    <div id="print-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-actions no-print">
+                <button id="modal-print-btn" class="btn"
+                    style="background-color: var(--primary-color); color: white;">Print</button>
+                <button id="modal-close-btn" class="btn" style="background-color: #6c757d; color: white;">Close</button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- ADSS LOGBOOK SLIP TEMPLATE -->
+                <div id="adss-slip-template" class="report-print-only hidden">
+                    <style>
+                        /* Inline styles for ADSS specific box alignment */
+                        .adss-badge {
+                            position: absolute;
+                            top: 35mm;
+                            right: 0;
+                            border: 3px solid black;
+                            padding: 15px 50px;
+                            font-size: 64px;
+                            font-weight: bold;
+                            text-align: center;
+                            line-height: 1;
+                        }
+
+                        .adss-report-box {
+                            width: 100%;
+                            position: relative;
+                            padding-top: 10mm;
+                        }
+                    </style>
+                    <div class="adss-report-box">
+                        <div class="header" style="text-align: center;">
+                            <h1 style="font-size: 16px; margin: 0;"><b>PHILIPPINE CROP INSURANCE CORPORATION</b></h1>
+                            <h2 style="font-size: 12px; margin: 5px 0; font-weight: normal;">Region 10, Cagayan de Oro
+                                City
+                            </h2>
+                            <h3 style="font-size: 14px; margin: 15px 0; font-weight: bold;"><b>CLTI LOGBOOK
+                                    PRE-PROCESSING
+                                    SLIP</b></h3>
+                        </div>
+
+                        <div class="adss-badge">ADSS</div>
+
+                        <div style="margin-top: 100px;">
+                            <div class="financial-grid" style="border: none;">
+                                <div class="col-left">
+                                    <div class="field">
+                                        <span class="label">DATE RECEIVED:</span>
+                                        <input type="text" class="input-line" id="adss-date-received">
+                                    </div>
+                                    <div class="field" style="margin-top: 10px;">
+                                        <span class="label" style="font-size: 14px; font-weight: bold;">LOGBOOK
+                                            NO.:</span>
+                                        <input type="text" class="input-line" id="adss-logbook-no"
+                                            style="border-bottom: 2px solid black;">
+                                    </div>
+                                    <div class="field" style="margin-top: 10px;">
+                                        <span class="label">PROGRAM:</span>
+                                        <input type="text" class="input-line"
+                                            style="font-style: italic; font-weight: bold;" value="Reg">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row" style="margin-top: 10px;">
+                                <div class="field full-width">
+                                    <span class="label">AGENT NAME:</span>
+                                    <input type="text" class="input-line" id="adss-agent-name">
+                                </div>
+                            </div>
+
+                            <div class="row" style="margin-top: 25px;">
+                                <div class="field full-width">
+                                    <span class="label">GROUP NAME:</span>
+                                    <input type="text" class="input-line" id="adss-group-name">
+                                </div>
+                            </div>
+
+                            <div class="financial-grid" style="border: none;">
+                                <div class="col-left">
+                                    <div class="field">
+                                        <span class="label">COC NO.:</span>
+                                        <input type="text" class="input-line">
+                                    </div>
+                                </div>
+                                <div class="col-right">
+                                    <div class="field">
+                                        <span class="label">DATE ISSUED:</span>
+                                        <input type="text" class="input-line">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="financial-grid" style="border: none;">
+                                <div class="col-left">
+                                    <div class="field">
+                                        <span class="label">TOTAL NO. OF INSURED:</span>
+                                        <input type="text" class="input-line" id="adss-total-insured">
+                                    </div>
+                                    <div class="field">
+                                        <span class="label">TOTAL SUM INSURED:</span>
+                                        <input type="text" class="input-line" id="adss-total-sum">
+                                    </div>
+                                    <div class="row-tight">
+                                        <span class="label">GROSS PREMIUM</span>
+                                        <input type="text" class="input-line text-right" id="adss-gross-premium"
+                                            value="-">
+                                    </div>
+                                    <div class="row-tight">
+                                        <span class="label">Solicitor's Incentive:</span>
+                                        <input type="text" class="input-line text-right" id="adss-incentive" value="-">
+                                    </div>
+                                    <div class="row-tight">
+                                        <span class="label">Group Discount</span>
+                                        <input type="text" class="input-line text-right" id="adss-discount" value="-">
+                                    </div>
+                                    <div class="row-tight">
+                                        <span class="label">Net Premium</span>
+                                        <input type="text" class="input-line text-right" id="adss-net-premium"
+                                            value="-">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="financial-grid" style="border: none; margin-top: 10px;">
+                                <div class="col-left">
+                                    <div class="row-tight">
+                                        <span class="label">AMOUNT REMITTED:</span>
+                                        <input type="text" class="input-line text-right" id="adss-remitted" value="-">
+                                    </div>
+                                    <div class="row-tight">
+                                        <span class="label">OR NUMBER:</span>
+                                        <input type="text" class="input-line" id="adss-or-number">
+                                    </div>
+                                    <div class="row-tight">
+                                        <span class="label">EFFECTIVITY DATE:</span>
+                                        <input type="text" class="input-line" id="adss-effectivity">
+                                    </div>
+                                </div>
+                                <div class="col-right">
+                                    <div class="row-tight">
+                                        <span class="label">Over/Under</span>
+                                        <input type="text" class="input-line text-right" value="-">
+                                    </div>
+                                    <div class="row-tight">
+                                        <span class="label">OR DATE:</span>
+                                        <input type="text" class="input-line">
+                                    </div>
+                                    <div class="row-tight">
+                                        <span class="label">EXPIRY DATE:</span>
+                                        <input type="text" class="input-line" id="adss-expiry">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="checkbox-grid" style="margin-top: 60px;">
+                                <div>Document Def:</div>
+                                <div><input type="checkbox"> Application</div>
+                                <div><input type="checkbox"> Age Requirement</div>
+                                <div></div>
+                                <div><input type="checkbox"> Date of Birth</div>
+                                <div><input type="checkbox"> Sum Insured Limit</div>
+                                <div></div>
+                                <div><input type="checkbox"> Beneficiaries</div>
+                                <div><input type="checkbox"> Health Statement</div>
+                            </div>
+
+                            <div class="signatures-section" style="margin-top: 80px; border-top: 1px solid #ccc;">
+                                <div class="sig-row">
+                                    <span class="label sig-label">PREPROCESSED BY:</span>
+                                    <input type="text" class="input-line sig-line">
+                                    <span class="label date-label">DATE:</span>
+                                    <input type="text" class="input-line date-line">
+                                </div>
+                                <div class="sig-row">
+                                    <span class="label sig-label">ENCODED BY:</span>
+                                    <input type="text" class="input-line sig-line">
+                                    <span class="label date-label">DATE:</span>
+                                    <input type="text" class="input-line date-line">
+                                </div>
+                                <div class="sig-row">
+                                    <span class="label sig-label">EVALUATED BY:</span>
+                                    <input type="text" class="input-line sig-line">
+                                    <span class="label date-label">DATE:</span>
+                                    <input type="text" class="input-line date-line">
+                                </div>
+                                <div class="sig-row">
+                                    <span class="label sig-label">Deficiency Letter No.</span>
+                                    <input type="text" class="input-line sig-line">
+                                    <span class="label date-label">DATE:</span>
+                                    <input type="text" class="input-line date-line">
+                                </div>
+                                <div class="sig-row">
+                                    <span class="label sig-label">Reviewing Slip No</span>
+                                    <input type="text" class="input-line sig-line">
+                                    <span class="label date-label">DATE:</span>
+                                    <input type="text" class="input-line date-line">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TIR REPORT TEMPLATE -->
+                <div id="tir-report-template" class="report-print-only hidden">
+                    <div class="full-header">
+                        <h1><b>PHILIPPINE CROP INSURANCE CORPORATION</b></h1>
+                        <div class="full-header2">
+                            <span>Regional Office No. 10</span><br>
+                            <span>ACCIDENT AND DISMEMBERMENT SECURITY SCHEME</span><br>
+                            <span><b>TERM INSURANCE REPORT</b></span>
+                        </div>
+                    </div>
+
+                    <div class="sec-header">
+                        <div class="date-right">DATE: <span id="tir-date">_______</span></div>
+                        <div class="label-match" style="text-align: left; margin-top: 5px;">Address: <input type="text"
+                                class="input-line" id="tir-address" style="width: auto; min-width: 300px;"></div>
+                    </div>
+
+                    <table border="1">
+                        <thead id="tir-table-head">
+                            <tr class="table-header">
+                                <td class="col-num" rowspan="2" style="width: 5mm;"></td>
+                                <td rowspan="2" style="width: 42mm;">NAME OF INSURED</td>
+                                <td rowspan="2" style="width: 28mm;">ADDRESS</td>
+                                <td rowspan="2" style="width: 15mm; text-align: center;">BIRTHDAY</td>
+                                <td rowspan="2" style="width: 7mm; text-align: center;">AGE</td>
+                                <td rowspan="2" style="width: 28mm;">PRIMARY BENEFICIARY</td>
+                                <td rowspan="2" style="width: 20mm;">RELATIONSHIP</td>
+                                <td rowspan="2" style="width: 18mm;">SUM INSURED</td>
+                                <td colspan="2" style="text-align: center; width: 32mm;">PERIOD OF COVER</td>
+                                <td rowspan="2" style="width: 12mm;">PREMIUM</td>
+                            </tr>
+                            <tr class="table-header">
+                                <td style="text-align: center; width: 16mm;">FROM</td>
+                                <td style="text-align: center; width: 16mm;">TO</td>
+                            </tr>
+                        </thead>
+                        <tbody id="tir-table-body">
+                            <!-- Rows will be injected here -->
+                        </tbody>
+                        <tfoot id="tir-table-foot">
+                            <tr style="font-weight: bold; background-color: #f9f9f9;">
+                                <td colspan="7" style="text-align: right;">TOTAL</td>
+                                <td id="tir-total-cover"></td>
+                                <td></td>
+                                <td></td>
+                                <td id="tir-total-premium"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div class="footer-grid">
+                        <div class="financial-col">
+                            <p class="label-match">SUMMARY OF PREMIUM REMITTANCE</p>
+                            <div class="input-container">
+                                <span>GROSS INCOME:</span>
+                                <div class="short-line" id="tir-gross-income"></div>
+                            </div>
+                            <div style="margin-top: 15px;">LESS: SERVICE FEE:</div>
+                            <div class="input-container">
+                                <b>NET PREMIUM DUE TO PCIC:</b>
+                                <div class="short-line" id="tir-net-premium"></div>
+                            </div>
+                        </div>
+
+                        <div class="signatures-section">
+                            <div class="signature-col">
+                                <p>PREPARED BY:</p>
+                                <div class="sig-space">
+                                    <input type="text" class="input-line"
+                                        style="text-align: center; font-weight: bold; width: 100%; border-bottom: 1px solid black;"
+                                        placeholder="Name of IU Designate">
+                                    <b>IU DESIGNATE</b>
+                                </div>
+                            </div>
+
+                            <div class="signature-col">
+                                <p>APPROVED BY:</p>
+                                <div class="sig-space">
+                                    <input type="text" class="input-line"
+                                        style="text-align: center; font-weight: bold; width: 100%; border-bottom: 1px solid black;"
+                                        placeholder="Name of Chief MSD">
+                                    <b>CHIEF MSD</b>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="ricencorn-preprocessing-slip" class="report-print-only hidden">
+                    <div class="report-box"
+                        style="border: 2px solid black; padding: 10px; width: 100%; box-sizing: border-box;">
+                        <div class="header">PHILIPPINE CROP INSURANCE CORPORATION</div>
+                        <div class="sub-header">Regional Office No. 10, Cagayan de Oro City<br>
+                            <strong>RICE/CORN LOGBOOK PRE-PROCESSING SLIP</strong>
+                        </div>
+
+                        <!-- ROW 1: Date Received | Rice | Corn -->
+                        <div class="financial-grid" style="border-top: none; padding-top: 0; margin-top: 0;">
+                            <div class="col-left">
+                                <div class="field">
+                                    <span class="label">DATE RECEIVED:</span> <input type="text" class="input-line"
+                                        id="print-date-received" readonly style="pointer-events: none;">
+                                </div>
+                            </div>
+                            <div class="col-right">
+                                <div class="row-tight">
+                                    <span class="label">RICE:</span> <input type="text" class="input-line text-right"
+                                        id="print-rice-line" readonly style="width: 40px; pointer-events: none;">
+                                    <span class="label" style="margin-left: 10px;">CORN:</span> <input type="text"
+                                        class="input-line text-right" id="print-corn-line" readonly
+                                        style="width: 40px; pointer-events: none;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ROW 2: Logbook No | Phase (offset) -->
+                        <div class="financial-grid" style="border-top: none; padding-top: 0; margin-top: 6px;">
+                            <div class="col-left">
+                                <div class="field">
+                                    <span class="label">LOGBOOK NO.:</span> <input type="text" class="input-line"
+                                        id="print-logbook-no">
+                                </div>
+                            </div>
+                            <div class="col-right">
+                                <div class="row-tight">
+                                    <span class="label">Phase:</span> <input type="text" class="input-line text-right"
+                                        id="print-phase">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ROW 3: Farmer Type | Program (offset) -->
+                        <div class="financial-grid" style="border-top: none; padding-top: 0; margin-top: 6px;">
+                            <div class="col-left">
+                                <div class="field">
+                                    <span class="label">FARMER TYPE:</span> <input type="text" class="input-line"
+                                        style="text-align: center;" value="SF">
+                                </div>
+                            </div>
+                            <div class="col-right">
+                                <div class="row-tight">
+                                    <span class="label">PROGRAM:</span> <input type="text" class="input-line text-right"
+                                        style="text-align: center;" value="RSBSA">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ROWS 4-6: Full width -->
+                        <div class="row">
+                            <div class="field full-width">
+                                <span class="label">LENDER NAME:</span> <input type="text" class="input-line"
+                                    id="print-lender-name">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="field full-width">
+                                <span class="label">GROUP NAME:</span> <input type="text" class="input-line"
+                                    id="print-group-name">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="field full-width">
+                                <span class="label">CIC NO.:</span> <input type="text" class="input-line"
+                                    id="print-cic-no">
+                            </div>
+                        </div>
+
+                        <!-- ROW 7: CIC Date | Expiry (offset) -->
+                        <div class="financial-grid" style="border-top: none; padding-top: 0; margin-top: 6px;">
+                            <div class="col-left">
+                                <div class="field">
+                                    <span class="label">CIC DATE ISSUED:</span> <input type="text" class="input-line"
+                                        id="print-cic-date">
+                                </div>
+                            </div>
+                            <div class="col-right">
+                                <div class="row-tight">
+                                    <span class="label">EXPIRY:</span> <input type="text" class="input-line text-right"
+                                        id="print-expiry">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ROW 8: Totals (Farmers | Area | Farms) -->
+                        <div class="financial-grid" style="border-top: none; padding-top: 0; margin-top: 6px;">
+                            <div class="col-left">
+                                <div class="field">
+                                    <span class="label">TOTAL NO OF: FARMERS:</span> <input type="text"
+                                        class="input-line" id="print-total-farmers" readonly
+                                        style="text-align: center; pointer-events: none;">
+                                </div>
+                            </div>
+                            <div class="col-right">
+                                <div class="row-tight">
+                                    <span class="label">AREA:</span> <input type="text" class="input-line text-right"
+                                        id="print-total-area" readonly
+                                        style="width: 40px; text-align: center; pointer-events: none;">
+                                    <span class="label" style="margin-left: 10px;">FARMS:</span> <input type="text"
+                                        class="input-line text-right" id="print-total-farms" readonly
+                                        style="width: 40px; text-align: center; pointer-events: none;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ROW 9: Total Amount Cover -->
+                        <div class="row">
+                            <div class="field full-width">
+                                <span class="label">TOTAL AMT OF COVER:</span> <input type="text" class="input-line"
+                                    id="print-total-amount-cover" readonly
+                                    style="pointer-events: none; font-weight: bold; font-size: 1.1em;">
+                            </div>
+                        </div>
+
+                        <!-- FINANCIALS GRID (2 Cols) -->
+                        <div class="financial-grid">
+                            <!-- Left Column -->
+                            <div class="col-left">
+                                <div class="row-tight">
+                                    <span class="label">Farmer Share</span>
+                                    <input type="text" class="input-line text-right" id="print-farmer-share">
+                                </div>
+                                <div class="row-tight">
+                                    <span class="label">LI Share</span>
+                                    <input type="text" class="input-line text-right" id="print-li-share" value="-">
+                                </div>
+                                <div class="row-tight">
+                                    <span class="label">Government Share</span>
+                                    <input type="text" class="input-line text-right" id="print-gov-share">
+                                </div>
+                                <div class="row-tight">
+                                    <span class="label">Total Gross Premium</span>
+                                    <input type="text" class="input-line text-right" id="print-gross-premium" readonly
+                                        style="pointer-events: none; font-weight: bold; font-size: 1.1em;">
+                                </div>
+                                <div class="row-tight">
+                                    <span class="label">O.R. NO.:</span>
+                                    <input type="text" class="input-line" id="print-or-no">
+                                </div>
+                                <div class="row-tight">
+                                    <span class="label">O.R. AMOUNT:</span>
+                                    <input type="text" class="input-line text-right" id="print-or-amount">
+                                </div>
+
+                                <div class="row-tight" style="margin-top: 5px;">
+                                    <span class="label">Document Deficiencies:</span>
+                                </div>
+                                <div class="checkbox-grid">
+                                    <div><input type="checkbox"> LOB</div>
+                                    <div><input type="checkbox"> Masterlist/LSM</div>
+                                    <div><input type="checkbox"> FPB</div>
+                                    <div><input type="checkbox"> PT's Certification</div>
+                                    <div><input type="checkbox"> DOP</div>
+                                    <div><input type="checkbox"> Variety</div>
+                                    <div><input type="checkbox"> Others</div>
+                                </div>
+                            </div>
+
+                            <!-- Right Column -->
+                            <div class="col-right">
+                                <div class="row-tight">
+                                    <span class="label">Farmer + LI</span>
+                                    <input type="text" class="input-line text-right" id="print-farmer-li" value="-">
+                                </div>
+                                <div class="row-tight">
+                                    <span class="label">Less: Service fee</span>
+                                    <input type="text" class="input-line text-right" id="print-service-fee" value="-">
+                                </div>
+                                <div class="row-tight">
+                                    <span class="label">Net Remittance</span>
+                                    <input type="text" class="input-line text-right" id="print-net-remittance"
+                                        value="-">
+                                </div>
+                                <div class="row-tight">
+                                    <span class="label">Over/Under</span>
+                                    <input type="text" class="input-line" id="print-over-under">
+                                </div>
+                                <div class="row-tight">
+                                    <span class="label">O.R. DATE:</span>
+                                    <input type="text" class="input-line" id="print-or-date">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- NOTES SECTION (Full Width) -->
+                        <div style="margin-top: 15px;">
+                            <div class="row">
+                                <div class="field full-width">
+                                    <span class="label">NOTE:</span> <input type="text" class="input-line"
+                                        id="print-note">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="field full-width">
+                                    <span class="label">&nbsp;</span> <input type="text" class="input-line"
+                                        id="print-note-2">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="field full-width">
+                                    <span class="label">&nbsp;</span> <input type="text" class="input-line"
+                                        id="print-note-3">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="field full-width">
+                                    <span class="label">&nbsp;</span> <input type="text" class="input-line"
+                                        id="print-note-4">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="field full-width">
+                                    <span class="label">&nbsp;</span> <input type="text" class="input-line"
+                                        id="print-note-5">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SIGNATURES SECTION -->
+                        <div class="signatures-section">
+                            <!-- Signature Lines (Standard) -->
+                            <div class="sig-row">
+                                <span class="label sig-label">SEARCHED BY:</span> <input type="text"
+                                    class="input-line sig-line">
+                                <span class="label date-label">DATE:</span> <input type="text"
+                                    class="input-line date-line">
+                            </div>
+                            <div class="sig-row">
+                                <span class="label sig-label">PROCESSED BY:</span> <input type="text"
+                                    class="input-line sig-line">
+                                <span class="label date-label">DATE:</span> <input type="text"
+                                    class="input-line date-line">
+                            </div>
+                            <div class="sig-row">
+                                <span class="label sig-label">LOGBOOKED BY:</span> <input type="text"
+                                    class="input-line sig-line">
+                                <span class="label date-label">DATE:</span> <input type="text"
+                                    class="input-line date-line">
+                            </div>
+                            <div class="sig-row">
+                                <span class="label sig-label">ENCODED BY:</span> <input type="text"
+                                    class="input-line sig-line">
+                                <span class="label date-label">DATE:</span> <input type="text"
+                                    class="input-line date-line">
+                            </div>
+                            <div class="sig-row">
+                                <span class="label sig-label">TRANSACTED BY:</span> <input type="text"
+                                    class="input-line sig-line">
+                                <span class="label date-label">DATE:</span> <input type="text"
+                                    class="input-line date-line">
+                            </div>
+                            <div class="sig-row">
+                                <span class="label sig-label">EVALUATED BY:</span> <input type="text"
+                                    class="input-line sig-line">
+                                <span class="label date-label">DATE:</span> <input type="text"
+                                    class="input-line date-line">
+                            </div>
+                            <div class="sig-row">
+                                <span class="label sig-label">VERIFIED BY:</span> <input type="text"
+                                    class="input-line sig-line">
+                                <span class="label date-label">DATE:</span> <input type="text"
+                                    class="input-line date-line">
+                            </div>
+                            <div class="sig-row">
+                                <span class="label sig-label">Deficiency Letter No:</span> <input type="text"
+                                    class="input-line sig-line">
+                                <span class="label date-label">DATE:</span> <input type="text"
+                                    class="input-line date-line">
+                            </div>
+                            <div class="sig-row">
+                                <span class="label sig-label">Reviewing Slip No:</span> <input type="text"
+                                    class="input-line sig-line">
+                                <span class="label date-label">DATE:</span> <input type="text"
+                                    class="input-line date-line">
+                            </div>
+
+                            <!-- Full Width Signature Lines -->
+                            <div class="sig-row">
+                                <span class="label sig-label">Date Suspended:</span> <input type="text"
+                                    class="input-line full-width-line">
+                            </div>
+                            <div class="sig-row">
+                                <span class="label sig-labelIndent">&gt;Reason/s:</span> <input type="text"
+                                    class="input-line full-width-line">
+                            </div>
+                            <div class="sig-row">
+                                <span class="label sig-label">Date Complied:</span> <input type="text"
+                                    class="input-line full-width-line">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HVC UNDERWRITING PROCESSING SLIP TEMPLATE -->
+                <div id="hvc-preprocessing-slip" class="report-print-only hidden"
+                    style="font-family: Arial, sans-serif; font-size: 9px; padding: 3mm; color: #000; width: 210mm; box-sizing: border-box; position: relative;">
+
+
+
+                    <div class="hvc-doc-header">
+                        <div class="hvc-office">Regional Office No. 10</div>
+                        <br>
+                        <div class="hvc-title">HIGH-VALUE CROP UNDERWRITING PROCESSING SHEET</div>
+                    </div>
+                    <br>
+                    <div class="hvc-top-section">
+                        <div class="hvc-top-row">
+                            <span class="hvc-field-label">Date Received:</span>
+                            <span class="hvc-field-value" id="hvc-date-received"
+                                style="width: 250px; flex: none;"></span>
+                            <div class="hvc-field-group"><span class="hvc-field-label">IU:</span><span
+                                    class="hvc-field-value"
+                                    style="width: 100px; flex: none; outline: none; cursor: text;"
+                                    contenteditable="true"></span></div>
+                            <div class="hvc-field-group"><span class="hvc-field-label">PEO:</span><span
+                                    class="hvc-field-value"
+                                    style="width: 100px; flex: none; outline: none; cursor: text;"
+                                    contenteditable="true"></span></div>
+                            <div class="hvc-field-group"><span class="hvc-field-label">RO:</span><span
+                                    class="hvc-field-value"
+                                    style="width: 60px; text-align: center; flex: none; outline: none; cursor: text;"
+                                    contenteditable="true">10</span></div>
+                        </div>
+                        <div class="hvc-top-row">
+                            <span class="hvc-field-label">Name of Account/Farmers Group:</span>
+                            <span class="hvc-field-value" id="hvc-farmers-group"></span>
+                        </div>
+                        <div class="hvc-top-row">
+                            <span class="hvc-field-label">Mailing Address:</span>
+                            <span class="hvc-field-value"></span>
+                        </div>
+
+                    </div>
+
+                    <!-- new 4th row for Program, Crop, Dates with equal length lines and no text wrapping -->
+                    <div class="hvc-program-row"
+                        style="display: flex; width: 100%; margin-top: 6px; margin-bottom: 3px; gap: 8px;">
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 8.5px; white-space: nowrap; margin-right: 4px;">
+                                Program:</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 8.5px; white-space: nowrap; margin-right: 4px;">
+                                Crop/Variety:</div>
+                            <div id="hvc-crop-variety" class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; pointer-events: none;">
+                            </div>
+                        </div>
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 8.5px; white-space: nowrap; margin-right: 4px;">
+                                EFFECTIVITY DATE</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 8.5px; white-space: nowrap; margin-right: 4px;">
+                                EXPIRY DATE</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="hvc-main-table">
+                        <colgroup>
+                            <col style="width: 140px;"> <!-- Row Labels (e.g., Number of Farmers) -->
+                            <col> <!-- Sub -->
+                            <col> <!-- Pro -->
+                            <col> <!-- Enc -->
+                            <col> <!-- Ver -->
+                            <col> <!-- Eva -->
+                            <col style="width: 70px;"> <!-- Ref Label -->
+                            <col style="width: 170px;"> <!-- Ref Value -->
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th rowspan="2" style="border-top: 1px solid #000 !important;"></th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Submitted</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Processed</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Encoded</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Verified</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Evaluated</th>
+                                <th colspan="2"
+                                    style="border-top: 1px solid #000 !important; font-weight: bold; font-size: 8.5px;">
+                                    REFERENCES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="hvc-orange-text">Number of Farmers</td>
+                                <td id="hvc-as-sub-farmers"></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">POLICY:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Number of Farms</td>
+                                <td id="hvc-as-sub-farms"></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">OR&nbsp;Number:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Total Area</td>
+                                <td id="hvc-as-sub-area"></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">OR Date:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Total Sum Insured</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">Logbook&nbsp;Number:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Gov't Premium Subsidy</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">Batch:</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table class="hvc-excerpt-section" style="table-layout: fixed;">
+                        <colgroup>
+                            <col style="width: 25%;">
+                            <col style="width: 75%;">
+                        </colgroup>
+                        <tr>
+                            <td colspan="2" class="hvc-section-title"
+                                style="text-align: center; font-weight: bold; border: 1px solid #000; padding: 4px; font-size: 9px; background-color: #fff;">
+                                PROCESSING EXCERPT/S</td>
+                        </tr>
+                        <tr>
+                            <td
+                                style="text-align: left; padding: 2px 4px; font-weight: normal; font-size: 8.5px; border: 1px solid #000; background-color: #fff;">
+                                Name of Farmer/s</td>
+                            <td
+                                style="text-align: center; padding: 2px 4px; font-weight: normal; font-size: 8.5px; border: 1px solid #000; background-color: #fff;">
+                                Deficiency/ies</td>
+                        </tr>
+                        <tr>
+                            <td style="height: 14px; border: 1px solid #000; outline: none; cursor: text;"
+                                contenteditable="true"></td>
+                            <td style="border: 1px solid #000; outline: none; cursor: text;" contenteditable="true">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 14px; border: 1px solid #000; outline: none; cursor: text;"
+                                contenteditable="true"></td>
+                            <td style="border: 1px solid #000; outline: none; cursor: text;" contenteditable="true">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 14px; border: 1px solid #000; outline: none; cursor: text;"
+                                contenteditable="true"></td>
+                            <td style="border: 1px solid #000; outline: none; cursor: text;" contenteditable="true">
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table class="hvc-activity-table">
+                        <thead>
+                            <tr>
+                                <th style="width:180px;">ACTIVITY</th>
+                                <th style="width:70px;">DATE</th>
+                                <th style="width:130px;">PERFORMED BY</th>
+                                <th style="width:130px;">RECEIVED BY</th>
+                                <th style="width:120px;">ELAPSED TIME</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1. Documentation/ Receipt of Underwriting Documents</td>
+                                <td id="hvc-act1-date"></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>2. Checks Completeness of Underwriting Documents</td>
+                                <td id="hvc-act2-date"></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-activity-italic">2.A Notifies Farmer of deficiencies if any
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>3. Conducts Farm Inspection</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>4. Prints Farm Inspection Report</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>5. Evaluates Insurance Application</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-activity-italic">5.A. Prints letter of non-acceptance if not
+                                    eligible
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>6. Approves Application</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>7. Transmits PQL</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>8. Receipt of Premium Payment</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>9. Issues OR</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>10. Assign Policy number</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>11. Logbook Encoding</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>12. Insurance Details Encoding</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>13. Verification of encoded data</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>14. Prepares Policy and Prints Acknowlededement or Deficiency Letter
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>15. Transmittal of Policy, Acknowledgement or Deficiency Letter</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>16. Prints UPS</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>17. Filing of underwriting documents</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="hvc-doc-footer">
+                        <div class="hvc-footer-sig">
+                            <div class="hvc-checked-by">Checked by/Date:</div>
+                            <div class="hvc-sig-line">Insurance Processor</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FISHERIES UNDERWRITING PROCESSING SLIP TEMPLATE -->
+                <div id="fisheries-preprocessing-slip" class="report-print-only hidden"
+                    style="font-family: Arial, sans-serif; font-size: 9px; padding: 3mm; color: #000; width: 210mm; box-sizing: border-box; position: relative;">
+
+                    <div class="hvc-doc-header">
+                        <div class="hvc-office">Regional Office No. 10</div>
+                        <br>
+                        <div class="hvc-title">FISHERIES UNDERWRITING PROCESSING SHEET</div>
+                    </div>
+                    <br>
+                    <div class="hvc-top-section">
+                        <div class="hvc-top-row">
+                            <span class="hvc-field-label">Date Received:</span>
+                            <span class="hvc-field-value" style="width: 250px; flex: none;"></span>
+                            <div class="hvc-field-group"><span class="hvc-field-label">IU:</span><span
+                                    class="hvc-field-value"
+                                    style="width: 100px; flex: none; outline: none; cursor: text;"
+                                    contenteditable="true"></span></div>
+                            <div class="hvc-field-group"><span class="hvc-field-label">PEO:</span><span
+                                    class="hvc-field-value"
+                                    style="width: 100px; flex: none; outline: none; cursor: text;"
+                                    contenteditable="true"></span></div>
+                            <div class="hvc-field-group"><span class="hvc-field-label">RO:</span><span
+                                    class="hvc-field-value"
+                                    style="width: 60px; text-align: center; flex: none; outline: none; cursor: text;"
+                                    contenteditable="true">10</span></div>
+                        </div>
+                        <div class="hvc-top-row">
+                            <span class="hvc-field-label">Name of Account/Farmers Group:</span>
+                            <span class="hvc-field-value" id="fisheries-farmers-group"></span>
+                        </div>
+                        <div class="hvc-top-row">
+                            <span class="hvc-field-label">Mailing Address:</span>
+                            <span class="hvc-field-value"></span>
+                        </div>
+
+                    </div>
+
+                    <!-- new 4th row for Program, Crop, Dates with equal length lines and no text wrapping -->
+                    <div class="hvc-program-row"
+                        style="display: flex; width: 100%; margin-top: 6px; margin-bottom: 3px; gap: 8px;">
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 8.5px; white-space: nowrap; margin-right: 4px;">
+                                Program:</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 8.5px; white-space: nowrap; margin-right: 4px;">
+                                Animals/ Species:</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 8.5px; white-space: nowrap; margin-right: 4px;">
+                                EFFECTIVITY DATE</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 8.5px; white-space: nowrap; margin-right: 4px;">
+                                EXPIRY DATE</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="hvc-main-table">
+                        <colgroup>
+                            <col style="width: 140px;"> <!-- Row Labels (e.g., Number of Farmers) -->
+                            <col> <!-- Sub -->
+                            <col> <!-- Pro -->
+                            <col> <!-- Enc -->
+                            <col> <!-- Ver -->
+                            <col> <!-- Eva -->
+                            <col style="width: 70px;"> <!-- Ref Label -->
+                            <col style="width: 170px;"> <!-- Ref Value -->
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th rowspan="2" style="border-top: 1px solid #000 !important;"></th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Submitted</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Processed</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Encoded</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Verified</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Evaluated</th>
+                                <th colspan="2"
+                                    style="border-top: 1px solid #000 !important; font-weight: bold; font-size: 8.5px;">
+                                    REFERENCES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="hvc-orange-text">Number of Farmers</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">POLICY:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Area</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">OR&nbsp;Number:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Total Sum Insured</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">OR Date:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Gov't Premium Subsidy</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">Logbook&nbsp;Number:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text"></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">Batch:</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table class="hvc-excerpt-section" style="table-layout: fixed;">
+                        <colgroup>
+                            <col style="width: 25%;">
+                            <col style="width: 75%;">
+                        </colgroup>
+                        <tr>
+                            <td colspan="2" class="hvc-section-title"
+                                style="text-align: center; font-weight: bold; border: 1px solid #000; padding: 4px; font-size: 9px; background-color: #fff;">
+                                PROCESSING EXCERPT/S</td>
+                        </tr>
+                        <tr>
+                            <td
+                                style="text-align: left; padding: 2px 4px; font-weight: normal; font-size: 8.5px; border: 1px solid #000; background-color: #fff;">
+                                Name of Farmer/s</td>
+                            <td
+                                style="text-align: center; padding: 2px 4px; font-weight: normal; font-size: 8.5px; border: 1px solid #000; background-color: #fff;">
+                                Deficiency/ies</td>
+                        </tr>
+                        <tr>
+                            <td style="height: 14px; border: 1px solid #000; outline: none; cursor: text;"
+                                contenteditable="true"></td>
+                            <td style="border: 1px solid #000; outline: none; cursor: text;" contenteditable="true">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 14px; border: 1px solid #000; outline: none; cursor: text;"
+                                contenteditable="true"></td>
+                            <td style="border: 1px solid #000; outline: none; cursor: text;" contenteditable="true">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 14px; border: 1px solid #000; outline: none; cursor: text;"
+                                contenteditable="true"></td>
+                            <td style="border: 1px solid #000; outline: none; cursor: text;" contenteditable="true">
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table class="hvc-activity-table">
+                        <thead>
+                            <tr>
+                                <th style="width:180px;">ACTIVITY</th>
+                                <th style="width:70px;">DATE</th>
+                                <th style="width:130px;">PERFORMED BY</th>
+                                <th style="width:130px;">RECEIVED BY</th>
+                                <th style="width:120px;">ELAPSED TIME</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1. Documentation/ Receipt of Underwriting Documents</td>
+                                <td id="fish-act1-date"></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>2. Checks Completeness of Underwriting Documents</td>
+                                <td id="fish-act2-date"></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-activity-italic">2.A Notifies Farmer of deficiencies if any
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>3. Conducts Farm Inspection</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>4. Prints Farm Inspection Report</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>5. Evaluates Insurance Application</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-activity-italic">5.A. Prints letter of non-acceptance if not
+                                    eligible
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>6. Approves Application</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>7. Transmits PQL</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>8. Receipt of Premium Payment</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>9. Issues OR</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>10. Assign Policy number</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>11. Logbook Encoding</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>12. Insurance Details Encoding</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>13. Verification of encoded data</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>14. Prepares Policy and Prints Acknowlededement or Deficiency Letter
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>15. Transmittal of Policy, Acknowledgement or Deficiency Letter</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>16. Prints UPS</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>17. Filing of underwriting documents</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="hvc-doc-footer">
+                        <div class="hvc-footer-sig">
+                            <div class="hvc-checked-by">Checked by/Date:</div>
+                            <div class="hvc-sig-line">Insurance Processor</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LIVESTOCK UNDERWRITING PROCESSING SLIP TEMPLATE -->
+                <div id="livestock-preprocessing-slip" class="report-print-only hidden"
+                    style="font-family: Arial, sans-serif; font-size: 9px; padding: 3mm; color: #000; width: 210mm; box-sizing: border-box; position: relative;">
+
+                    <div class="hvc-doc-header">
+                        <div class="hvc-office">Regional Office No. 10</div>
+                        <br>
+                        <div class="hvc-title">LIVESTOCK UNDERWRITING PROCESSING SHEET</div>
+                    </div>
+                    <br>
+                    <div class="hvc-top-section">
+                        <div class="hvc-top-row">
+                            <span class="hvc-field-label">Date Received:</span>
+                            <span class="hvc-field-value" style="width: 250px; flex: none;"></span>
+                            <div class="hvc-field-group"><span class="hvc-field-label">IU:</span><span
+                                    class="hvc-field-value"
+                                    style="width: 100px; flex: none; outline: none; cursor: text;"
+                                    contenteditable="true"></span></div>
+                            <div class="hvc-field-group"><span class="hvc-field-label">PEO:</span><span
+                                    class="hvc-field-value"
+                                    style="width: 100px; flex: none; outline: none; cursor: text;"
+                                    contenteditable="true"></span></div>
+                            <div class="hvc-field-group"><span class="hvc-field-label">RO:</span><span
+                                    class="hvc-field-value"
+                                    style="width: 60px; text-align: center; flex: none; outline: none; cursor: text;"
+                                    contenteditable="true">10</span></div>
+                        </div>
+                        <div class="hvc-top-row">
+                            <span class="hvc-field-label">Name of Account/Farmers Group:</span>
+                            <span class="hvc-field-value" id="livestock-farmers-group"></span>
+                        </div>
+                        <div class="hvc-top-row">
+                            <span class="hvc-field-label">Mailing Address:</span>
+                            <span class="hvc-field-value"></span>
+                        </div>
+
+                    </div>
+
+                    <!-- new 4th row for Program, Crop, Dates with equal length lines and no text wrapping -->
+                    <div class="hvc-program-row"
+                        style="display: flex; width: 100%; margin-top: 6px; margin-bottom: 3px; gap: 8px;">
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 8.5px; white-space: nowrap; margin-right: 4px;">
+                                Program:</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 8.5px; white-space: nowrap; margin-right: 4px;">
+                                Animals/ Species:</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 8.5px; white-space: nowrap; margin-right: 4px;">
+                                EFFECTIVITY DATE</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 8.5px; white-space: nowrap; margin-right: 4px;">
+                                EXPIRY DATE</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="hvc-main-table">
+                        <colgroup>
+                            <col style="width: 140px;"> <!-- Row Labels (e.g., Number of Farmers) -->
+                            <col> <!-- Sub -->
+                            <col> <!-- Pro -->
+                            <col> <!-- Enc -->
+                            <col> <!-- Ver -->
+                            <col> <!-- Eva -->
+                            <col style="width: 70px;"> <!-- Ref Label -->
+                            <col style="width: 170px;"> <!-- Ref Value -->
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th rowspan="2" style="border-top: 1px solid #000 !important;"></th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Submitted</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Processed</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Encoded</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Verified</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px;">
+                                    As&nbsp;Evaluated</th>
+                                <th colspan="2"
+                                    style="border-top: 1px solid #000 !important; font-weight: bold; font-size: 8.5px;">
+                                    REFERENCES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="hvc-orange-text">Number of Farmers</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">POLICY:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Number of Heads</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">OR&nbsp;Number:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Total Sum Insured</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">OR Date:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Premium Rate</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">Logbook&nbsp;Number:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Gov't Premium Subsidy</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">Batch:</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table class="hvc-excerpt-section" style="table-layout: fixed;">
+                        <colgroup>
+                            <col style="width: 25%;">
+                            <col style="width: 75%;">
+                        </colgroup>
+                        <tr>
+                            <td colspan="2" class="hvc-section-title"
+                                style="text-align: center; font-weight: bold; border: 1px solid #000; padding: 4px; font-size: 9px; background-color: #fff;">
+                                PROCESSING EXCERPT/S</td>
+                        </tr>
+                        <tr>
+                            <td
+                                style="text-align: left; padding: 2px 4px; font-weight: normal; font-size: 8.5px; border: 1px solid #000; background-color: #fff;">
+                                Name of Farmer/s</td>
+                            <td
+                                style="text-align: center; padding: 2px 4px; font-weight: normal; font-size: 8.5px; border: 1px solid #000; background-color: #fff;">
+                                Deficiency/ies</td>
+                        </tr>
+                        <tr>
+                            <td style="height: 14px; border: 1px solid #000; outline: none; cursor: text;"
+                                contenteditable="true"></td>
+                            <td style="border: 1px solid #000; outline: none; cursor: text;" contenteditable="true">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 14px; border: 1px solid #000; outline: none; cursor: text;"
+                                contenteditable="true"></td>
+                            <td style="border: 1px solid #000; outline: none; cursor: text;" contenteditable="true">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 14px; border: 1px solid #000; outline: none; cursor: text;"
+                                contenteditable="true"></td>
+                            <td style="border: 1px solid #000; outline: none; cursor: text;" contenteditable="true">
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table class="hvc-activity-table">
+                        <thead>
+                            <tr>
+                                <th style="width:180px;">ACTIVITY</th>
+                                <th style="width:70px;">DATE</th>
+                                <th style="width:130px;">PERFORMED BY</th>
+                                <th style="width:130px;">RECEIVED BY</th>
+                                <th style="width:120px;">ELAPSED TIME</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1. Documentation</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>2. Issuance of OR</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>3. Assign Policy number</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>4. Logbook Encoding</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>5. Insurance Encoding</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>6. Verification of encoded data</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>7. Evaluation of insurance coverage</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>8. Printing of IDS and Policy</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>9. Printing of Underwriting PS, Acknowledgement or Deficiency Letter</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>10. Transmittal of Policy, Acknowledgement and Deficiency Letter</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>11. Filing of underwriting documents</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="hvc-doc-footer">
+                        <div class="hvc-footer-sig">
+                            <div class="hvc-checked-by">Checked by/Date:</div>
+                            <div class="hvc-sig-line">Insurance Processor</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="noncrop-preprocessing-slip" class="report-print-only hidden"
+                    style="font-family: Arial, sans-serif; font-size: 9px; padding: 3mm; color: #000; width: 210mm; box-sizing: border-box; position: relative;">
+
+                    <div class="hvc-doc-header">
+                        <div class="hvc-office" style="font-size: 12px;">Regional Office No. 10</div>
+                        <br>
+                        <div class="hvc-title" style="font-size: 13px;">NON-CROP AGRICULTURAL ASSET INSURANCE PROGRAM
+                            UNDERWRITING PROCESSING
+                            SHEET</div>
+                    </div>
+                    <br>
+                    <div class="hvc-top-section">
+                        <div class="hvc-top-row">
+                            <span class="hvc-field-label" style="font-size: 11px;">Date Received:</span>
+                            <span class="hvc-field-value" style="width: 250px; flex: none; font-size: 11px;"></span>
+                            <div class="hvc-field-group"><span class="hvc-field-label"
+                                    style="font-size: 11px;">IU:</span><span class="hvc-field-value"
+                                    style="width: 100px; flex: none; font-size: 11px;"></span></div>
+                            <div class="hvc-field-group"><span class="hvc-field-label"
+                                    style="font-size: 11px;">PEO:</span><span class="hvc-field-value"
+                                    style="width: 100px; flex: none; font-size: 11px;"></span></div>
+                            <div class="hvc-field-group"><span class="hvc-field-label"
+                                    style="font-size: 11px;">RO:</span><span class="hvc-field-value"
+                                    style="width: 60px; text-align: center; flex: none; font-size: 11px;">10</span>
+                            </div>
+                        </div>
+                        <div class="hvc-top-row">
+                            <span class="hvc-field-label" style="font-size: 11px;">Name of Account/Farmers Group:</span>
+                            <span class="hvc-field-value" id="noncrop-farmers-group" style="font-size: 11px;"></span>
+                        </div>
+                        <div class="hvc-top-row">
+                            <span class="hvc-field-label" style="font-size: 11px;">Mailing Address:</span>
+                            <span class="hvc-field-value" style="font-size: 11px;"></span>
+                        </div>
+
+                    </div>
+
+                    <!-- new 4th row for Program, Crop, Dates with equal length lines and no text wrapping -->
+                    <div class="hvc-program-row"
+                        style="display: flex; width: 100%; margin-top: 6px; margin-bottom: 3px; gap: 8px;">
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 10.5px; white-space: nowrap; margin-right: 4px;">
+                                Program:</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 10.5px; white-space: nowrap; margin-right: 4px;">
+                                Animals/ Species:</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 10.5px; white-space: nowrap; margin-right: 4px;">
+                                EFFECTIVITY DATE</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                        <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
+                            <div class="hvc-prog-label"
+                                style="font-weight: bold; font-size: 10.5px; white-space: nowrap; margin-right: 4px;">
+                                EXPIRY DATE</div>
+                            <div class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
+                                contenteditable="true">
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="hvc-main-table">
+                        <colgroup>
+                            <col style="width: 140px;"> <!-- Row Labels (e.g., Number of Farmers) -->
+                            <col> <!-- Sub -->
+                            <col> <!-- Pro -->
+                            <col> <!-- Enc -->
+                            <col> <!-- Ver -->
+                            <col> <!-- Eva -->
+                            <col style="width: 70px;"> <!-- Ref Label -->
+                            <col style="width: 170px;"> <!-- Ref Value -->
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th rowspan="2" style="border-top: 1px solid #000 !important;"></th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px; white-space: nowrap;">
+                                    As&nbsp;Submitted</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px; white-space: nowrap;">
+                                    As&nbsp;Processed</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px; white-space: nowrap;">
+                                    As&nbsp;Encoded</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px; white-space: nowrap;">
+                                    As&nbsp;Verified</th>
+                                <th
+                                    style="border-top: 1px solid #000 !important; font-weight: normal; font-size: 8.5px; white-space: nowrap;">
+                                    As&nbsp;Evaluated</th>
+                                <th colspan="2"
+                                    style="border-top: 1px solid #000 !important; font-weight: bold; font-size: 8.5px;">
+                                    REFERENCES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="hvc-orange-text">Number of Farmers</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">POLICY:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Number of Heads</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">OR&nbsp;Number:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Total Sum Insured</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">OR Date:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Premium Rate</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">Logbook&nbsp;Number:</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="hvc-orange-text">Gov't Premium Subsidy</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="hvc-label-cell">Batch:</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table class="hvc-excerpt-section" style="table-layout: fixed;">
+                        <colgroup>
+                            <col style="width: 25%;">
+                            <col style="width: 75%;">
+                        </colgroup>
+                        <tr>
+                            <td colspan="2" class="hvc-section-title"
+                                style="text-align: center; font-weight: bold; border: 1px solid #000; padding: 4px; font-size: 11px; background-color: #fff;">
+                                PROCESSING EXCERPT/S</td>
+                        </tr>
+                        <tr>
+                            <td
+                                style="text-align: left; padding: 2px 4px; font-weight: normal; font-size: 10.5px; border: 1px solid #000; background-color: #fff;">
+                                Name of Farmer/s</td>
+                            <td
+                                style="text-align: center; padding: 2px 4px; font-weight: normal; font-size: 10.5px; border: 1px solid #000; background-color: #fff;">
+                                Deficiency/ies</td>
+                        </tr>
+                        <tr>
+                            <td style="height: 14px; border: 1px solid #000; outline: none; cursor: text;"
+                                contenteditable="true"></td>
+                            <td style="border: 1px solid #000; outline: none; cursor: text;" contenteditable="true">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 14px; border: 1px solid #000; outline: none; cursor: text;"
+                                contenteditable="true"></td>
+                            <td style="border: 1px solid #000; outline: none; cursor: text;" contenteditable="true">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 14px; border: 1px solid #000; outline: none; cursor: text;"
+                                contenteditable="true"></td>
+                            <td style="border: 1px solid #000; outline: none; cursor: text;" contenteditable="true">
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table class="hvc-activity-table">
+                        <thead>
+                            <tr>
+                                <th style="width:180px; font-size: 10.5px;">ACTIVITY</th>
+                                <th style="width:70px; font-size: 10.5px;">DATE</th>
+                                <th style="width:130px; font-size: 10.5px;">PERFORMED BY</th>
+                                <th style="width:130px; font-size: 10.5px;">RECEIVED BY</th>
+                                <th style="width:120px; font-size: 10.5px;">ELAPSED TIME</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-size: 10px;">1. Documentation</td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 10px;">2. Issuance of OR</td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 10px;">3. Assign Policy number</td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 10px;">4. Logbook Encoding</td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 10px;">5. Insurance Encoding</td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 10px;">6. Verification of encoded data</td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 10px;">7. Evaluation of insurance coverage</td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 10px;">8. Printing of IDS and Policy</td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 10px;">9. Printing of Underwriting PS, Acknowledgement or
+                                    Deficiency Letter</td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 10px;">10. Transmittal of Policy, Acknowledgement and Deficiency
+                                    Letter</td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 10px;">11. Filing of underwriting documents</td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px;"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="hvc-doc-footer">
+                        <div class="hvc-footer-sig">
+                            <div class="hvc-checked-by" style="font-size: 11px;">Checked by/Date:</div>
+                            <div class="hvc-sig-line" style="font-size: 10.5px;">Insurance Processor</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
