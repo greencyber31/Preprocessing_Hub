@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Make empty activity table cells editable for UI functionality
     document.querySelectorAll('.hvc-activity-table tbody td:not(:first-child)').forEach(td => {
+        if (td.id && td.id.endsWith('-date')) return; // Skip auto-filled date cells
         td.setAttribute('contenteditable', 'true');
         td.style.outline = 'none';
         td.style.cursor = 'text';
@@ -945,6 +946,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const formattedArea = totalAreaHvc.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
             setVal('hvc-as-sub-area', formattedArea);
 
+            // Total Sum Insured (based on 'Crop AmountCover')
+            const totalSumInsuredHvc = reportData.reduce((sum, row) => {
+                const rawAmount = row['Crop AmountCover'];
+                // Clean comma formatted strings if any, then parse
+                const amount = parseFloat(String(rawAmount || 0).replace(/,/g, ''));
+                return sum + (isNaN(amount) ? 0 : amount);
+            }, 0);
+            setVal('hvc-total-sum-insured', totalSumInsuredHvc.toLocaleString('en-US', { minimumFractionDigits: 2 }));
+
+
             // Activity Dates
             const hvcDateReceivedText = new Date().toLocaleDateString('en-US');
             setVal('hvc-act1-date', hvcDateReceivedText);
@@ -979,6 +990,70 @@ document.addEventListener('DOMContentLoaded', () => {
                 livestockFarmersGroup.textContent = firstRow['FarmersGroup'] || firstRow['GroupName'] || '';
             }
 
+            // Total Sum Insured (based on 'Livestock AmountCover')
+            const totalSumInsuredLivestock = reportData.reduce((sum, row) => {
+                const rawAmount = row['Livestock AmountCover'];
+                // Clean comma formatted strings if any, then parse
+                const amount = parseFloat(String(rawAmount || 0).replace(/,/g, ''));
+                return sum + (isNaN(amount) ? 0 : amount);
+            }, 0);
+            setVal('livestock-total-sum-insured', totalSumInsuredLivestock.toLocaleString('en-US', { minimumFractionDigits: 2 }));
+
+            // Number of Heads (total rows shown in the slip)
+            setVal('livestock-number-of-heads', reportData.length);
+
+            // Number of Unique Farmers
+            const uniqueFarmersLivestock = new Set(reportData.map(row => String(row['FarmersID'] || '')).filter(val => val.trim() !== ''));
+            setVal('livestock-number-of-farmers', uniqueFarmersLivestock.size);
+
+            // Animals/ Species (Majority CropType + Majority Class)
+            const livestockCropCounts = {};
+            let livestockMaxCropCount = 0;
+            let livestockMajorityCrop = '';
+
+            const livestockClassCounts = {};
+            let livestockMaxClassCount = 0;
+            let livestockMajorityClass = '';
+
+            reportData.forEach(row => {
+                const crop = String(row.CropType || '').trim();
+                const cls = String(row.Class || '').trim();
+
+                if (crop) {
+                    livestockCropCounts[crop] = (livestockCropCounts[crop] || 0) + 1;
+                    if (livestockCropCounts[crop] > livestockMaxCropCount) {
+                        livestockMaxCropCount = livestockCropCounts[crop];
+                        livestockMajorityCrop = crop;
+                    }
+                }
+
+                if (cls) {
+                    livestockClassCounts[cls] = (livestockClassCounts[cls] || 0) + 1;
+                    if (livestockClassCounts[cls] > livestockMaxClassCount) {
+                        livestockMaxClassCount = livestockClassCounts[cls];
+                        livestockMajorityClass = cls;
+                    }
+                }
+            });
+
+            const speciesDisplay = livestockMajorityCrop && livestockMajorityClass ?
+                `${livestockMajorityCrop} (${livestockMajorityClass})` :
+                (livestockMajorityCrop || livestockMajorityClass || '');
+
+            const speciesElement = document.getElementById('livestock-animal-species');
+            if (speciesElement) speciesElement.textContent = speciesDisplay;
+
+            // Auto-populate Date Received
+            const livestockDateReceived = document.getElementById('livestock-date-received');
+            const currentFormattedDate = new Date().toLocaleDateString('en-US');
+            if (livestockDateReceived) {
+                livestockDateReceived.textContent = currentFormattedDate;
+            }
+
+            // Activity Dates
+            setVal('livestock-act1-date', currentFormattedDate);
+            setVal('livestock-act2-date', currentFormattedDate);
+
             if (printModal) printModal.classList.remove('hidden');
 
         } else if (isNonCrop) {
@@ -990,6 +1065,70 @@ document.addEventListener('DOMContentLoaded', () => {
                 const firstRow = reportData[0];
                 noncropFarmersGroup.textContent = firstRow['FarmersGroup'] || firstRow['GroupName'] || '';
             }
+
+            // Total Sum Insured (based on 'Banca AmountCover')
+            const totalSumInsuredNonCrop = reportData.reduce((sum, row) => {
+                const rawAmount = row['Banca AmountCover'];
+                // Clean comma formatted strings if any, then parse
+                const amount = parseFloat(String(rawAmount || 0).replace(/,/g, ''));
+                return sum + (isNaN(amount) ? 0 : amount);
+            }, 0);
+            setVal('noncrop-total-sum-insured', totalSumInsuredNonCrop.toLocaleString('en-US', { minimumFractionDigits: 2 }));
+
+            // Number of Unique Farmers
+            const uniqueFarmersNonCrop = new Set(reportData.map(row => String(row['FarmersID'] || '')).filter(val => val.trim() !== ''));
+            setVal('noncrop-number-of-farmers', uniqueFarmersNonCrop.size);
+
+            // Number of Units (total rows shown in the slip)
+            setVal('noncrop-number-of-units', reportData.length);
+
+            // NCAAI Unit (Majority CropType + Majority Class)
+            const noncropCropCounts = {};
+            let noncropMaxCropCount = 0;
+            let noncropMajorityCrop = '';
+
+            const noncropClassCounts = {};
+            let noncropMaxClassCount = 0;
+            let noncropMajorityClass = '';
+
+            reportData.forEach(row => {
+                const crop = String(row.CropType || '').trim();
+                const cls = String(row.Class || '').trim();
+
+                if (crop) {
+                    noncropCropCounts[crop] = (noncropCropCounts[crop] || 0) + 1;
+                    if (noncropCropCounts[crop] > noncropMaxCropCount) {
+                        noncropMaxCropCount = noncropCropCounts[crop];
+                        noncropMajorityCrop = crop;
+                    }
+                }
+
+                if (cls) {
+                    noncropClassCounts[cls] = (noncropClassCounts[cls] || 0) + 1;
+                    if (noncropClassCounts[cls] > noncropMaxClassCount) {
+                        noncropMaxClassCount = noncropClassCounts[cls];
+                        noncropMajorityClass = cls;
+                    }
+                }
+            });
+
+            const noncropSpeciesDisplay = noncropMajorityCrop && noncropMajorityClass ?
+                `${noncropMajorityCrop} (${noncropMajorityClass})` :
+                (noncropMajorityCrop || noncropMajorityClass || '');
+
+            const noncropSpeciesElement = document.getElementById('noncrop-ncaai-unit');
+            if (noncropSpeciesElement) noncropSpeciesElement.textContent = noncropSpeciesDisplay;
+
+            // Auto-populate Date Received
+            const noncropDateReceived = document.getElementById('noncrop-date-received');
+            const currentFormattedDate = new Date().toLocaleDateString('en-US');
+            if (noncropDateReceived) {
+                noncropDateReceived.textContent = currentFormattedDate; // Will show MM/DD/YYYY
+            }
+
+            // Activity Dates
+            setVal('noncrop-act1-date', currentFormattedDate);
+            setVal('noncrop-act2-date', currentFormattedDate);
 
             if (printModal) printModal.classList.remove('hidden');
 

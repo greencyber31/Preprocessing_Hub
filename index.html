@@ -849,7 +849,7 @@
                             </tr>
                             <tr>
                                 <td class="hvc-orange-text">Total Sum Insured</td>
-                                <td></td>
+                                <td id="hvc-total-sum-insured"></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
@@ -1444,7 +1444,8 @@
                     <div class="hvc-top-section">
                         <div class="hvc-top-row">
                             <span class="hvc-field-label">Date Received:</span>
-                            <span class="hvc-field-value" style="width: 250px; flex: none;"></span>
+                            <span class="hvc-field-value" id="livestock-date-received"
+                                style="width: 250px; flex: none;"></span>
                             <div class="hvc-field-group"><span class="hvc-field-label">IU:</span><span
                                     class="hvc-field-value"
                                     style="width: 100px; flex: none; outline: none; cursor: text;"
@@ -1464,7 +1465,8 @@
                         </div>
                         <div class="hvc-top-row">
                             <span class="hvc-field-label">Mailing Address:</span>
-                            <span class="hvc-field-value"></span>
+                            <span class="hvc-field-value" style="outline: none; cursor: text;"
+                                contenteditable="true"></span>
                         </div>
 
                     </div>
@@ -1485,9 +1487,8 @@
                             <div class="hvc-prog-label"
                                 style="font-weight: bold; font-size: 8.5px; white-space: nowrap; margin-right: 4px;">
                                 Animals/ Species:</div>
-                            <div class="hvc-prog-val"
-                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
-                                contenteditable="true">
+                            <div id="livestock-animal-species" class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; pointer-events: none;">
                             </div>
                         </div>
                         <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
@@ -1547,7 +1548,7 @@
                         <tbody>
                             <tr>
                                 <td class="hvc-orange-text">Number of Farmers</td>
-                                <td></td>
+                                <td id="livestock-number-of-farmers"></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
@@ -1557,7 +1558,7 @@
                             </tr>
                             <tr>
                                 <td class="hvc-orange-text">Number of Heads</td>
-                                <td></td>
+                                <td id="livestock-number-of-heads"></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
@@ -1567,7 +1568,7 @@
                             </tr>
                             <tr>
                                 <td class="hvc-orange-text">Total Sum Insured</td>
-                                <td></td>
+                                <td id="livestock-total-sum-insured"></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
@@ -1577,7 +1578,7 @@
                             </tr>
                             <tr>
                                 <td class="hvc-orange-text">Premium Rate</td>
-                                <td></td>
+                                <td style="outline: none; cursor: text;" contenteditable="true"></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
@@ -1649,14 +1650,14 @@
                         <tbody>
                             <tr>
                                 <td>1. Documentation</td>
-                                <td></td>
+                                <td id="livestock-act1-date"></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
                             </tr>
                             <tr>
                                 <td>2. Issuance of OR</td>
-                                <td></td>
+                                <td id="livestock-act2-date"></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
@@ -1749,13 +1750,16 @@
                     <div class="hvc-top-section">
                         <div class="hvc-top-row">
                             <span class="hvc-field-label" style="font-size: 11px;">Date Received:</span>
-                            <span class="hvc-field-value" style="width: 250px; flex: none; font-size: 11px;"></span>
+                            <span class="hvc-field-value" id="noncrop-date-received"
+                                style="width: 250px; flex: none; font-size: 11px;"></span>
                             <div class="hvc-field-group"><span class="hvc-field-label"
                                     style="font-size: 11px;">IU:</span><span class="hvc-field-value"
-                                    style="width: 100px; flex: none; font-size: 11px;"></span></div>
+                                    style="width: 100px; flex: none; font-size: 11px; outline: none; cursor: text;"
+                                    contenteditable="true"></span></div>
                             <div class="hvc-field-group"><span class="hvc-field-label"
                                     style="font-size: 11px;">PEO:</span><span class="hvc-field-value"
-                                    style="width: 100px; flex: none; font-size: 11px;"></span></div>
+                                    style="width: 100px; flex: none; font-size: 11px; outline: none; cursor: text;"
+                                    contenteditable="true"></span></div>
                             <div class="hvc-field-group"><span class="hvc-field-label"
                                     style="font-size: 11px;">RO:</span><span class="hvc-field-value"
                                     style="width: 60px; text-align: center; flex: none; font-size: 11px;">10</span>
@@ -1767,7 +1771,8 @@
                         </div>
                         <div class="hvc-top-row">
                             <span class="hvc-field-label" style="font-size: 11px;">Mailing Address:</span>
-                            <span class="hvc-field-value" style="font-size: 11px;"></span>
+                            <span class="hvc-field-value" style="font-size: 11px; outline: none; cursor: text;"
+                                contenteditable="true"></span>
                         </div>
 
                     </div>
@@ -1787,10 +1792,9 @@
                         <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
                             <div class="hvc-prog-label"
                                 style="font-weight: bold; font-size: 10.5px; white-space: nowrap; margin-right: 4px;">
-                                Animals/ Species:</div>
-                            <div class="hvc-prog-val"
-                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; outline: none; cursor: text;"
-                                contenteditable="true">
+                                NCAAI Unit:</div>
+                            <div id="noncrop-ncaai-unit" class="hvc-prog-val"
+                                style="border-bottom: 1.5px solid #000; flex: 1; height: 12px; pointer-events: none;">
                             </div>
                         </div>
                         <div class="hvc-program-col" style="flex: 1; display: flex; align-items: flex-end;">
@@ -1850,7 +1854,7 @@
                         <tbody>
                             <tr>
                                 <td class="hvc-orange-text">Number of Farmers</td>
-                                <td></td>
+                                <td id="noncrop-number-of-farmers"></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
@@ -1859,8 +1863,8 @@
                                 <td></td>
                             </tr>
                             <tr>
-                                <td class="hvc-orange-text">Number of Heads</td>
-                                <td></td>
+                                <td class="hvc-orange-text">Number of Units</td>
+                                <td id="noncrop-number-of-units"></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
@@ -1870,7 +1874,7 @@
                             </tr>
                             <tr>
                                 <td class="hvc-orange-text">Total Sum Insured</td>
-                                <td></td>
+                                <td id="noncrop-total-sum-insured"></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
@@ -1880,7 +1884,7 @@
                             </tr>
                             <tr>
                                 <td class="hvc-orange-text">Premium Rate</td>
-                                <td></td>
+                                <td style="outline: none; cursor: text;" contenteditable="true"></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
@@ -1952,14 +1956,16 @@
                         <tbody>
                             <tr>
                                 <td style="font-size: 10px;">1. Documentation</td>
-                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px; pointer-events: none; user-select: none;"
+                                    id="noncrop-act1-date"></td>
                                 <td style="font-size: 10px;"></td>
                                 <td style="font-size: 10px;"></td>
                                 <td style="font-size: 10px;"></td>
                             </tr>
                             <tr>
                                 <td style="font-size: 10px;">2. Issuance of OR</td>
-                                <td style="font-size: 10px;"></td>
+                                <td style="font-size: 10px; pointer-events: none; user-select: none;"
+                                    id="noncrop-act2-date"></td>
                                 <td style="font-size: 10px;"></td>
                                 <td style="font-size: 10px;"></td>
                                 <td style="font-size: 10px;"></td>
