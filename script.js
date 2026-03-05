@@ -955,6 +955,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 0);
             setVal('hvc-total-sum-insured', totalSumInsuredHvc.toLocaleString('en-US', { minimumFractionDigits: 2 }));
 
+            // Gov't Premium Subsidy (5% of Total Sum Insured)
+            const hvcGovSubsidy = totalSumInsuredHvc * 0.05;
+            setVal('hvc-gov-subsidy', hvcGovSubsidy.toLocaleString('en-US', { minimumFractionDigits: 2 }));
+
 
             // Activity Dates
             const hvcDateReceivedText = new Date().toLocaleDateString('en-US');
